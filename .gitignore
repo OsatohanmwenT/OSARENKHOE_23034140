@@ -36,7 +36,6 @@ static/uploads/*
 !static/uploads/.gitkeep
 
 # Models
-models/*.pkl
 models/*.h5
 models/*.pt
 
