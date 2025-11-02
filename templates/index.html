@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Emotion Detection - Analyze Emotions from Images</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🎭 AI Emotion Detection</h1>
+            <p class="subtitle">Upload an image to detect facial emotions using advanced AI</p>
+            <div style="margin-top: 1rem;">
+                <a href="/realtime" style="display: inline-block; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; text-decoration: none; border-radius: 0.5rem; font-weight: 600; transition: all 0.3s ease;">
+                    🎥 Try Real-time Detection
+                </a>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <!-- User Information Form -->
+                <div class="user-form" id="userForm">
+                    <h3>👤 Your Information</h3>
+                    <div class="form-group">
+                        <label for="userName">Name</label>
+                        <input type="text" id="userName" placeholder="Enter your name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="userEmail">Email</label>
+                        <input type="email" id="userEmail" placeholder="Enter your email" required>
+                    </div>
+                </div>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-content">
+                        <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <h3>Drop your image here</h3>
+                        <p>or click to browse</p>
+                        <p class="file-types">Supports: JPG, PNG, GIF, BMP (Max 16MB)</p>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                </div>
+
+                <!-- Preview Area -->
+                <div class="preview-area" id="previewArea" style="display: none;">
+                    <img id="previewImage" src="" alt="Preview">
+                    <button class="btn-secondary" id="changeImageBtn">Change Image</button>
+                </div>
+
+                <!-- Analyze Button -->
+                <button class="btn-primary" id="analyzeBtn" style="display: none;">
+                    <span>Analyze Emotion</span>
+                </button>
+
+                <!-- Loading Indicator -->
+                <div class="loading" id="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Analyzing emotions...</p>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <h2>Detection Results</h2>
+                
+                <!-- Dominant Emotion -->
+                <div class="dominant-emotion" id="dominantEmotion">
+                    <div class="emotion-icon">😊</div>
+                    <h3 id="dominantEmotionText">Happy</h3>
+                    <p class="confidence" id="dominantConfidence">95.3%</p>
+                </div>
+
+                <!-- All Emotions Chart -->
+                <div class="emotions-chart">
+                    <h3>All Detected Emotions</h3>
+                    <div class="chart-bars" id="emotionsChart">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button class="btn-primary" id="analyzeAnotherBtn">Analyze Another Image</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by Flask, scikit-learn & Computer Vision</p>
+            <p class="version">Version 1.0.0</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

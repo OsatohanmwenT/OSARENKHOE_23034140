@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Emotion Detection - Live Webcam</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .video-container {
+            position: relative;
+            max-width: 800px;
+            margin: 2rem auto;
+            background: var(--bg-secondary);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .video-feed {
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            margin: 0 auto;
+            display: block;
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-btn.start {
+            background: linear-gradient(135deg, var(--success-color), #059669);
+            color: white;
+        }
+
+        .control-btn.stop {
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+            color: white;
+        }
+
+        .control-btn.back {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .status.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-color);
+        }
+
+        .status.inactive {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+        }
+
+        .instructions {
+            background: var(--bg-tertiary);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .instructions h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .instructions ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .instructions li {
+            padding: 0.5rem 0;
+            color: var(--text-secondary);
+        }
+
+        .instructions li:before {
+            content: "✓ ";
+            color: var(--success-color);
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .loading-video {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 400px;
+            color: var(--text-secondary);
+        }
+
+        .spinner-large {
+            width: 80px;
+            height: 80px;
+            border: 6px solid var(--border-color);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Real-time Results */
+        .realtime-results {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 1rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .realtime-results h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .dominant-emotion-live {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .emotion-icon-live {
+            font-size: 4rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .emotion-info {
+            flex: 1;
+        }
+
+        .emotion-info h4 {
+            font-size: 2rem;
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .confidence-live {
+            font-size: 1.5rem;
+            color: var(--success-color);
+            font-weight: 700;
+            margin: 0.25rem 0 0 0;
+        }
+
+        .emotions-chart-live {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .emotion-bar-live {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            animation: slideInLeft 0.3s ease;
+        }
+
+        .emotion-label-live {
+            min-width: 90px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .bar-container-live {
+            flex: 1;
+            height: 30px;
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill-live {
+            height: 100%;
+            border-radius: 0.5rem;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 0.5rem;
+        }
+
+        .bar-percentage-live {
+            color: white;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .face-count {
+            text-align: center;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🎥 Real-time Emotion Detection</h1>
+            <p class="subtitle">Live facial emotion analysis using your webcam</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Video Container -->
+            <section class="video-container">
+                <div id="loadingVideo" class="loading-video">
+                    <div class="spinner-large"></div>
+                    <p style="margin-top: 1.5rem;">Initializing camera...</p>
+                </div>
+                <img id="videoFeed" class="video-feed" style="display: none;" alt="Live Video Feed">
+                
+                <!-- Real-time Results -->
+                <div id="realtimeResults" class="realtime-results" style="display: none;">
+                    <h3>📊 Live Emotion Analysis</h3>
+                    <div class="dominant-emotion-live">
+                        <div class="emotion-icon-live" id="dominantEmotionIcon">😊</div>
+                        <div class="emotion-info">
+                            <h4 id="dominantEmotionName">Detecting...</h4>
+                            <p class="confidence-live" id="dominantEmotionConfidence">0%</p>
+                        </div>
+                    </div>
+                    <div class="emotions-chart-live" id="emotionsChartLive">
+                        <!-- Dynamically populated -->
+                    </div>
+                    <div class="face-count">
+                        <span id="faceCountText">Faces detected: 0</span>
+                    </div>
+                </div>
+                
+                <!-- Status -->
+                <div id="status" class="status inactive">
+                    📹 Camera Inactive
+                </div>
+
+                <!-- Controls -->
+                <div class="controls">
+                    <button class="control-btn start" id="startBtn">
+                        <span>▶️</span>
+                        Start Detection
+                    </button>
+                    <button class="control-btn stop" id="stopBtn" style="display: none;">
+                        <span>⏹️</span>
+                        Stop Detection
+                    </button>
+                    <button class="control-btn back" onclick="window.location.href='/'">
+                        <span>🏠</span>
+                        Back to Upload
+                    </button>
+                </div>
+
+                <!-- Instructions -->
+                <div class="instructions">
+                    <h3>📋 Instructions</h3>
+                    <ul>
+                        <li>Click "Start Detection" to begin webcam capture</li>
+                        <li>Position your face in front of the camera</li>
+                        <li>The system will automatically detect and analyze your emotions</li>
+                        <li>Multiple faces can be detected simultaneously</li>
+                        <li>Make sure you have good lighting for better accuracy</li>
+                        <li>Allow camera permissions when prompted</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Powered by Flask, scikit-learn & OpenCV</p>
+            <p class="version">Real-time Detection v1.0.0</p>
+        </footer>
+    </div>
+
+    <script>
+        const videoFeed = document.getElementById('videoFeed');
+        const loadingVideo = document.getElementById('loadingVideo');
+        const status = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const realtimeResults = document.getElementById('realtimeResults');
+        const dominantEmotionIcon = document.getElementById('dominantEmotionIcon');
+        const dominantEmotionName = document.getElementById('dominantEmotionName');
+        const dominantEmotionConfidence = document.getElementById('dominantEmotionConfidence');
+        const emotionsChartLive = document.getElementById('emotionsChartLive');
+        const faceCountText = document.getElementById('faceCountText');
+        
+        let isStreaming = false;
+        let updateInterval = null;
+
+        // Emotion to emoji mapping
+        const emotionEmojis = {
+            'Happy': '😊',
+            'Sad': '😢',
+            'Angry': '😠',
+            'Surprise': '😲',
+            'Fear': '😨',
+            'Disgust': '🤢',
+            'Neutral': '😐',
+            'None': '👤'
+        };
+
+        // Emotion colors
+        const emotionColors = {
+            'Happy': '#FFD700',
+            'Sad': '#4169E1',
+            'Angry': '#DC143C',
+            'Surprise': '#FF69B4',
+            'Fear': '#9370DB',
+            'Disgust': '#32CD32',
+            'Neutral': '#808080'
+        };
+
+        function startDetection() {
+            videoFeed.src = '/api/video_feed?' + new Date().getTime();
+            videoFeed.style.display = 'block';
+            loadingVideo.style.display = 'none';
+            realtimeResults.style.display = 'block';
+            
+            startBtn.style.display = 'none';
+            stopBtn.style.display = 'flex';
+            
+            status.className = 'status active';
+            status.innerHTML = '🟢 Camera Active - Detecting Emotions';
+            
+            isStreaming = true;
+            
+            // Start polling for emotion data
+            updateInterval = setInterval(updateEmotionData, 500); // Update twice per second
+            
+            // Handle video load
+            videoFeed.onload = function() {
+                console.log('Video feed loaded successfully');
+            };
+            
+            videoFeed.onerror = function() {
+                console.error('Error loading video feed');
+                stopDetection();
+                alert('Error: Could not access camera. Please check permissions.');
+            };
+        }
+
+        function stopDetection() {
+            videoFeed.src = '';
+            videoFeed.style.display = 'none';
+            loadingVideo.style.display = 'flex';
+            realtimeResults.style.display = 'none';
+            
+            startBtn.style.display = 'flex';
+            stopBtn.style.display = 'none';
+            
+            status.className = 'status inactive';
+            status.innerHTML = '📹 Camera Inactive';
+            
+            isStreaming = false;
+            
+            // Stop polling
+            if (updateInterval) {
+                clearInterval(updateInterval);
+                updateInterval = null;
+            }
+        }
+
+        async function updateEmotionData() {
+            if (!isStreaming) return;
+            
+            try {
+                const response = await fetch('/api/emotion_data');
+                const data = await response.json();
+                
+                // Update face count
+                faceCountText.textContent = `Faces detected: ${data.faces}`;
+                
+                if (data.faces > 0 && Object.keys(data.predictions).length > 0) {
+                    // Update dominant emotion
+                    const dominantEmotion = data.dominant_emotion;
+                    const confidence = data.predictions[dominantEmotion];
+                    
+                    dominantEmotionIcon.textContent = emotionEmojis[dominantEmotion] || '😊';
+                    dominantEmotionName.textContent = dominantEmotion;
+                    dominantEmotionConfidence.textContent = `${confidence.toFixed(1)}%`;
+                    
+                    // Update emotion bars
+                    updateEmotionBars(data.predictions);
+                } else {
+                    // No faces detected
+                    dominantEmotionIcon.textContent = '👤';
+                    dominantEmotionName.textContent = 'No Face Detected';
+                    dominantEmotionConfidence.textContent = '0%';
+                    emotionsChartLive.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 1rem;">Position your face in front of the camera</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching emotion data:', error);
+            }
+        }
+
+        function updateEmotionBars(predictions) {
+            emotionsChartLive.innerHTML = '';
+            
+            // Sort emotions by confidence
+            const sortedEmotions = Object.entries(predictions)
+                .sort((a, b) => b[1] - a[1]);
+            
+            sortedEmotions.forEach(([emotion, probability]) => {
+                const barEl = document.createElement('div');
+                barEl.className = 'emotion-bar-live';
+                
+                const color = emotionColors[emotion] || '#6366f1';
+                
+                barEl.innerHTML = `
+                    <div class="emotion-label-live">${emotionEmojis[emotion] || '😊'} ${emotion}</div>
+                    <div class="bar-container-live">
+                        <div class="bar-fill-live" style="width: ${probability}%; background: linear-gradient(90deg, ${color}, ${adjustColor(color, -20)});">
+                            <span class="bar-percentage-live">${probability.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                `;
+                
+                emotionsChartLive.appendChild(barEl);
+            });
+        }
+
+        // Adjust color brightness
+        function adjustColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255))
+                .toString(16).slice(1);
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startDetection);
+        stopBtn.addEventListener('click', stopDetection);
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (isStreaming) {
+                stopDetection();
+            }
+        });
+
+        // Hide loading on page load
+        window.addEventListener('load', () => {
+            loadingVideo.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
